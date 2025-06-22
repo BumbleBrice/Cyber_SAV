@@ -64,14 +64,18 @@ function setupDatabase() {
                 title VARCHAR(255) NOT NULL,
                 description TEXT NOT NULL,
                 brand_id INT,
+                component_id INT,
                 component_model_id INT,
                 peripheral_id INT,
                 setup_id INT,
+                user_id INT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL,
+                FOREIGN KEY (component_id) REFERENCES components(id) ON DELETE SET NULL,
                 FOREIGN KEY (component_model_id) REFERENCES component_models(id) ON DELETE SET NULL,
                 FOREIGN KEY (peripheral_id) REFERENCES peripherals(id) ON DELETE SET NULL,
-                FOREIGN KEY (setup_id) REFERENCES setups(id) ON DELETE SET NULL
+                FOREIGN KEY (setup_id) REFERENCES setups(id) ON DELETE SET NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
             )"
         ];
 

@@ -1,81 +1,127 @@
-<?php
-session_start();
-if (!isset($_SESSION['user'])) {
-    header('Location: index.php?page=home');
-    exit;
-}
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-centered">Ajouter un problème</h1>
 
-require_once 'core/db.php';
+        <?php if ($success): ?>
+            <div class="notification is-success">
+                ✅ Problème ajouté avec succès.
+            </div>
+        <?php endif; ?>
 
-$pdo = getDbConnection();
-$errors = [];
-$success = false;
+        <?php if (!empty($errors)): ?>
+            <div class="notification is-danger">
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?= htmlspecialchars($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim($_POST['title'] ?? '');
-    $description = trim($_POST['description'] ?? '');
+        <form method="post" novalidate>
+            <div class="field">
+                <label class="label" for="title">Titre du problème <span aria-hidden="true">*</span></label>
+                <div class="control">
+                    <input class="input" type="text" name="title" id="title" required>
+                </div>
+            </div>
 
-    $brand_id = $_POST['brand_id'] ?? null;
-    $new_brand = trim($_POST['new_brand'] ?? '');
+            <div class="field">
+                <label class="label" for="description">Description <span aria-hidden="true">*</span></label>
+                <div class="control">
+                    <textarea class="textarea" name="description" id="description" rows="4" required></textarea>
+                </div>
+            </div>
 
-    $component_model_id = $_POST['component_model_id'] ?? null;
-    $new_component_model = trim($_POST['new_component_model'] ?? '');
+            <!-- Marque -->
+            <div class="field">
+                <label class="label" for="brand_id">Marque <span aria-hidden="true">*</span></label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="brand_id" id="brand_id">
+                            <option value="">-- Sélectionner une marque --</option>
+                            <?php foreach ($brands as $brand): ?>
+                                <option value="<?= $brand['id'] ?>"><?= htmlspecialchars($brand['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <p class="help">Ou ajouter une nouvelle marque :</p>
+                <input class="input" type="text" name="new_brand" placeholder="Nouvelle marque (facultatif)">
+            </div>
 
-    $peripheral_id = $_POST['peripheral_id'] ?? null;
-    $new_peripheral = trim($_POST['new_peripheral'] ?? '');
+            <!-- Type de composant -->
+            <div class="field">
+                <label class="label" for="component_id">Type de composant</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="component_id" id="component_id">
+                            <option value="">-- Aucun --</option>
+                            <?php foreach ($components as $c): ?>
+                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['type']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <p class="help">Ou ajouter un nouveau type de composant :</p>
+                <input class="input mt-2" type="text" name="new_component_type" placeholder="Nouveau type de composant (facultatif)">
+            </div>
 
-    $setup_id = $_POST['setup_id'] ?? null;
-    $new_setup = trim($_POST['new_setup'] ?? '');
+            <!-- Composant -->
+            <div class="field">
+                <label class="label" for="component_model_id">Modèle de composant</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="component_model_id" id="component_model_id">
+                            <option value="">-- Aucun --</option>
+                            <?php foreach ($componentModels as $model): ?>
+                                <option value="<?= $model['id'] ?>">
+                                    <?= htmlspecialchars("{$model['brand']} - {$model['name']}") ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <input class="input mt-2" type="text" name="new_component_model" placeholder="Nouveau modèle de composant (facultatif)">
+            </div>
 
-    if (empty($title)) $errors[] = "Le titre est requis.";
-    if (empty($description)) $errors[] = "La description est requise.";
+            <!-- Périphérique -->
+            <div class="field">
+                <label class="label" for="peripheral_id">Périphérique</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="peripheral_id" id="peripheral_id">
+                            <option value="">-- Aucun --</option>
+                            <?php foreach ($peripherals as $p): ?>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <input class="input mt-2" type="text" name="new_peripheral" placeholder="Nouveau périphérique (facultatif)">
+            </div>
 
-    // Marque : insertion si nécessaire
-    if (!$brand_id && $new_brand !== '') {
-        $stmt = $pdo->prepare("INSERT INTO brands (name) VALUES (?)");
-        $stmt->execute([$new_brand]);
-        $brand_id = $pdo->lastInsertId();
-    }
+            <!-- Setup -->
+            <div class="field">
+                <label class="label" for="setup_id">Modèle de PC portable</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="setup_id" id="setup_id">
+                            <option value="">-- Aucun --</option>
+                            <?php foreach ($setups as $s): ?>
+                                <option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['model']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <input class="input mt-2" type="text" name="new_setup" placeholder="Nouveau modèle de setup (facultatif)">
+            </div>
 
-    // Composant modèle : insertion si nécessaire
-    if (!$component_model_id && $new_component_model !== '') {
-        $component_id = $pdo->query("SELECT id FROM components WHERE type = 'Autre' LIMIT 1")->fetchColumn();
-        if (!$component_id) {
-            $pdo->exec("INSERT INTO components (type) VALUES ('Autre')");
-            $component_id = $pdo->lastInsertId();
-        }
-        $stmt = $pdo->prepare("INSERT INTO component_models (name, component_id, brand_id) VALUES (?, ?, ?)");
-        $stmt->execute([$new_component_model, $component_id, $brand_id]);
-        $component_model_id = $pdo->lastInsertId();
-    }
-
-    // Périphérique : insertion si nécessaire
-    if (!$peripheral_id && $new_peripheral !== '') {
-        $stmt = $pdo->prepare("INSERT INTO peripherals (name, brand_id) VALUES (?, ?)");
-        $stmt->execute([$new_peripheral, $brand_id]);
-        $peripheral_id = $pdo->lastInsertId();
-    }
-
-    // Setup : insertion si nécessaire
-    if (!$setup_id && $new_setup !== '') {
-        $stmt = $pdo->prepare("INSERT INTO setups (model, brand_id) VALUES (?, ?)");
-        $stmt->execute([$new_setup, $brand_id]);
-        $setup_id = $pdo->lastInsertId();
-    }
-
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("INSERT INTO problems (title, description, brand_id, component_model_id, peripheral_id, setup_id) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$title, $description, $brand_id ?: null, $component_model_id ?: null, $peripheral_id ?: null, $setup_id ?: null]);
-        $success = true;
-    }
-}
-
-// Données pour les listes déroulantes
-$brands = $pdo->query("SELECT id, name FROM brands ORDER BY name")->fetchAll();
-$componentModels = $pdo->query("SELECT cm.id, cm.name, b.name AS brand FROM component_models cm JOIN brands b ON cm.brand_id = b.id ORDER BY b.name, cm.name")->fetchAll();
-$peripherals = $pdo->query("SELECT id, name FROM peripherals ORDER BY name")->fetchAll();
-$setups = $pdo->query("SELECT id, model FROM setups ORDER BY model")->fetchAll();
-
-require_once 'views/header.php';
-require_once 'views/add_problem.php';
-require_once 'views/footer.php';
+            <div class="field is-grouped is-grouped-centered mt-5">
+                <div class="control">
+                    <button type="submit" class="button is-link">Ajouter le problème</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

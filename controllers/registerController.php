@@ -60,5 +60,5 @@ createUser($pseudo, $email, $hash);
 
 // Message de succès
 $_SESSION['success'] = "Account created! Please wait for validation before logging in.";
-header('Location: index.php?page=home');
+header('Location: index.php?page=login');
 exit;
