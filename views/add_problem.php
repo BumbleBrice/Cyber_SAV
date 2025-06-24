@@ -19,6 +19,7 @@
         <?php endif; ?>
 
         <form method="post" novalidate>
+            <!-- Titre -->
             <div class="field">
                 <label class="label" for="title">Titre du problème <span aria-hidden="true">*</span></label>
                 <div class="control">
@@ -26,6 +27,7 @@
                 </div>
             </div>
 
+            <!-- Description -->
             <div class="field">
                 <label class="label" for="description">Description <span aria-hidden="true">*</span></label>
                 <div class="control">
@@ -67,20 +69,13 @@
                 <input class="input mt-2" type="text" name="new_component_type" placeholder="Nouveau type de composant (facultatif)">
             </div>
 
-            <!-- Composant -->
+            <!-- Modèle de composant avec autocomplétion -->
             <div class="field">
-                <label class="label" for="component_model_id">Modèle de composant</label>
+                <label class="label" for="component_model_input">Modèle de composant</label>
                 <div class="control">
-                    <div class="select is-fullwidth">
-                        <select name="component_model_id" id="component_model_id">
-                            <option value="">-- Aucun --</option>
-                            <?php foreach ($componentModels as $model): ?>
-                                <option value="<?= $model['id'] ?>">
-                                    <?= htmlspecialchars("{$model['brand']} - {$model['name']}") ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                    <input class="input" list="component_model_suggestions" id="component_model_input" name="component_model_input" placeholder="Rechercher un modèle...">
+                    <datalist id="component_model_suggestions"></datalist>
+                    <input type="hidden" name="component_model_id" id="component_model_id">
                 </div>
                 <input class="input mt-2" type="text" name="new_component_model" placeholder="Nouveau modèle de composant (facultatif)">
             </div>
@@ -125,3 +120,37 @@
         </form>
     </div>
 </section>
+
+<!-- Script autocomplétion -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('component_model_input');
+    const hidden = document.getElementById('component_model_id');
+    const datalist = document.getElementById('component_model_suggestions');
+
+    input.addEventListener('input', async () => {
+        const query = input.value.trim();
+        if (query.length < 2) return;
+
+        try {
+            const res = await fetch(`api/component_models.php?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            datalist.innerHTML = '';
+            data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = `${item.brand} - ${item.name}`;
+                opt.dataset.id = item.id;
+                datalist.appendChild(opt);
+            });
+        } catch (err) {
+            console.error("Erreur chargement composants :", err);
+        }
+    });
+
+    input.addEventListener('change', () => {
+        const selected = Array.from(datalist.options).find(opt => opt.value === input.value);
+        hidden.value = selected ? selected.dataset.id : '';
+    });
+});
+</script>

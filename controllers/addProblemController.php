@@ -14,7 +14,6 @@ $success = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
-
     $brand_id = $_POST['brand_id'] ?: null;
     $new_brand = trim($_POST['new_brand'] ?? '');
 
@@ -30,57 +29,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $setup_id = $_POST['setup_id'] ?: null;
     $new_setup = trim($_POST['new_setup'] ?? '');
 
-    $user_id = $_SESSION['user']['id'] ?? null;
+    $user_id = $_SESSION['user']['id'];
 
     if (empty($title)) $errors[] = "Le titre est requis.";
     if (empty($description)) $errors[] = "La description est requise.";
 
-    // Étape 1 : Créer la marque si besoin
+    // Marque
     if (!$brand_id && $new_brand !== '') {
         $stmt = $pdo->prepare("INSERT INTO brands (name) VALUES (?)");
         $stmt->execute([$new_brand]);
         $brand_id = $pdo->lastInsertId();
     }
 
-    // Étape 2 : Créer le type de composant si besoin
+    // Type de composant
     if (!$component_id && $new_component_type !== '') {
         $stmt = $pdo->prepare("INSERT INTO components (type) VALUES (?)");
         $stmt->execute([$new_component_type]);
         $component_id = $pdo->lastInsertId();
     }
 
-    // Étape 3 : Créer le modèle de composant si besoin
-    if (!$component_model_id && $new_component_model !== '') {
-        if (!$component_id) {
-            $component_id = $pdo->query("SELECT id FROM components WHERE type = 'Autre' LIMIT 1")->fetchColumn();
-            if (!$component_id) {
-                $pdo->exec("INSERT INTO components (type) VALUES ('Autre')");
-                $component_id = $pdo->lastInsertId();
-            }
-        }
-
-        if ($brand_id) {
-            $stmt = $pdo->prepare("INSERT INTO component_models (name, component_id, brand_id) VALUES (?, ?, ?)");
-            $stmt->execute([$new_component_model, $component_id, $brand_id]);
-            $component_model_id = $pdo->lastInsertId();
-        }
+    // Modèle de composant
+    if (!$component_model_id && $new_component_model !== '' && $component_id && $brand_id) {
+        $stmt = $pdo->prepare("INSERT INTO component_models (name, component_id, brand_id) VALUES (?, ?, ?)");
+        $stmt->execute([$new_component_model, $component_id, $brand_id]);
+        $component_model_id = $pdo->lastInsertId();
     }
 
-    // Étape 4 : Créer le périphérique si besoin
+    // Périphérique
     if (!$peripheral_id && $new_peripheral !== '' && $brand_id) {
         $stmt = $pdo->prepare("INSERT INTO peripherals (name, brand_id) VALUES (?, ?)");
         $stmt->execute([$new_peripheral, $brand_id]);
         $peripheral_id = $pdo->lastInsertId();
     }
 
-    // Étape 5 : Créer le setup si besoin
+    // Setup
     if (!$setup_id && $new_setup !== '' && $brand_id) {
         $stmt = $pdo->prepare("INSERT INTO setups (model, brand_id) VALUES (?, ?)");
         $stmt->execute([$new_setup, $brand_id]);
         $setup_id = $pdo->lastInsertId();
     }
 
-    // Étape 6 : Insertion finale du problème
+    // Problème
     if (empty($errors)) {
         $stmt = $pdo->prepare("INSERT INTO problems (
             title, description, brand_id, component_model_id,
@@ -102,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Données pour les listes déroulantes
+// Données
 $brands = $pdo->query("SELECT id, name FROM brands ORDER BY name")->fetchAll();
 $components = $pdo->query("SELECT id, type FROM components ORDER BY type")->fetchAll();
 $componentModels = $pdo->query("SELECT cm.id, cm.name, b.name AS brand FROM component_models cm JOIN brands b ON cm.brand_id = b.id ORDER BY b.name, cm.name")->fetchAll();
